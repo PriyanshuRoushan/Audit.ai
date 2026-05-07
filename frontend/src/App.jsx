@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
 
-import Landing from "./services/Landing";
-import Audit from "./services/Audit";
-import Result from "./services/Result";
-import Report from "./services/Report";
+import Landing from "./pages/Landing";
+import Audit from "./pages/Audit";
+import Result from "./pages/Result";
+import Report from "./pages/Report";
 function App() {
   return (
     <div>
