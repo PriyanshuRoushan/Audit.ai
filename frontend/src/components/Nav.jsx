@@ -20,14 +20,17 @@ export function Nav() {
 
   return (
     <nav style={{ position: "fixed", top: 0, width: "100%", zIndex: 50, background: "rgba(19,19,19,0.8)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px" }}>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-10">
         <span
           onClick={() => handleNavigate("landing")}
           style={{ fontWeight: 700, fontSize: 24, color: "#e5e2e1", letterSpacing: "-0.01em", cursor: "pointer" }}
         >
           Audit.ai
         </span>
-        <div className="hidden md:flex items-center gap-5 ml-4">
+        <div 
+          className="hidden md:flex items-center ml-4"
+          style={{ display: "flex", gap: "10px" }}
+        >
           {[["dashboard", "Dashboard"], ["audit", "Audit"], ["report", "History"], [null, "Settings"]].map(([key, label]) => (
             <button
               key={label}
@@ -36,7 +39,9 @@ export function Nav() {
                 fontSize: 14,
                 fontWeight: activePage === key ? 700 : 500,
                 color: activePage === key ? "#c0c1ff" : "#c7c4d7",
-                background: "none", border: "none", cursor: "pointer",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
                 borderBottom: activePage === key ? "2px solid #c0c1ff" : "none",
                 paddingBottom: activePage === key ? 4 : 0,
               }}

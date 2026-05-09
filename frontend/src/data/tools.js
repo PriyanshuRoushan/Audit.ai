@@ -2,12 +2,12 @@ export const tools = [
   {
     id: "cursor",
     name: "Cursor",
-    plans: ["Hobby", "Pro", "Business", "Enterprise"]
+    plans: ["Hobby", "Pro", "Pro+", "Ultra", "Teams", "Enterprise"]
   },
   {
     id: "chatgpt",
     name: "ChatGPT",
-    plans: ["Plus", "Team", "Enterprise", "API"]
+    plans: ["Free", "Go", "Plus", "Pro", "Business", "Enterprise"]
   },
   {
     id: "claude",
@@ -17,26 +17,26 @@ export const tools = [
   {
     id: "copilot",
     name: "GitHub Copilot",
-    plans: ["Individual", "Business", "Enterprise"]
+    plans: ["Free", "Pro", "Business", "Enterprise"]
   },
   {
     id: "gemini",
     name: "Gemini",
-    plans: ["Pro", "Ultra", "API"]
+    plans: ["Free", "Advanced", "Enterprise", "API"]
   },
   {
     id: "openai",
     name: "OpenAI API",
-    plans: ["Pay As You Go"]
+    plans: ["Pay As You Go", "Custom Enterprise"]
   },
   {
     id: "anthropic",
     name: "Anthropic API",
-    plans: ["Pay As You Go"]
+    plans: ["Pay As You Go", "Enterprise"]
   },
   {
     id: "windsurf",
     name: "Windsurf",
-    plans: ["Free", "Pro", "Teams"]
+    plans: ["Free", "Pro", "Teams", "Enterprise"]
   }
 ];
