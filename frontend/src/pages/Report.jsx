@@ -18,25 +18,33 @@ export default function ReportPage() {
   };
 
   useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`http://localhost:5000/api/audits/${slug}/report`, {
+  const fetchReport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const API = import.meta.env.VITE_API_URL;
+
+      const res = await fetch(
+        `${API}/api/audits/${slug}/report`,
+        {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        if (!res.ok) throw new Error('Failed to fetch report');
-        const data = await res.json();
-        setReport(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReport();
-  }, [slug]);
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch report");
+
+      const data = await res.json();
+      setReport(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchReport();
+}, [slug]);
 
   const C = { primary: "#c0c1ff", secondary: "#4edea3", outline: "#908fa0", onSurface: "#e5e2e1", onSurfaceVariant: "#c7c4d7", onPrimary: "#1000a9" };
 

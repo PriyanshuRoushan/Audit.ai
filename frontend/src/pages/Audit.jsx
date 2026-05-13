@@ -72,7 +72,7 @@ export default function AuditPage() {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/audits', {
+      const response =  await fetch(`${API}/api/audits`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
