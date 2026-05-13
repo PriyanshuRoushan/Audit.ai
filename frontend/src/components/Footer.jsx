@@ -1,26 +1,16 @@
 export function Footer() {
   return (
-    <footer style={{ background: "#0e0e0e", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-      <div className="flex flex-col md:flex-row justify-between items-center px-6 py-12 max-w-full mx-auto gap-4">
-        <div className="flex flex-col gap-2">
-          <span className="font-bold text-lg" style={{ color: "#e5e2e1" }}>Audit.ai</span>
-          <p style={{ color: "#908fa0", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-            © 2024 Audit.ai. Secure financial precision for builders.
-          </p>
+    <footer className="w-full bg-surface-container-lowest border-t border-white/10">
+      <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row justify-between items-center px-container-padding py-section-gap w-full">
+        <div className="flex flex-col items-center md:items-start gap-stack-sm mb-stack-md md:mb-0">
+          <span className="font-h3 text-h3 text-on-surface">Audit.ai</span>
+          <p className="text-outline text-label-caps">© 2024 Audit.ai. Secure financial precision for builders.</p>
         </div>
-        <div className="flex gap-4">
-          {["Privacy", "Security", "Terms", "API Docs"].map((link) => (
-            <a key={link} href="#" style={{ color: "#908fa0", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", textDecoration: "none" }}>
-              {link}
-            </a>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          {["share", "hub"].map((icon) => (
-            <div key={icon} style={{ width: 32, height: 32, borderRadius: 4, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, color: "#e5e2e1" }}>{icon}</span>
-            </div>
-          ))}
+        <div className="flex gap-gutter">
+          <a className="text-outline font-label-caps hover:text-on-surface transition-colors" href="#">Privacy</a>
+          <a className="text-outline font-label-caps hover:text-on-surface transition-colors" href="#">Security</a>
+          <a className="text-outline font-label-caps hover:text-on-surface transition-colors" href="#">Terms</a>
+          <a className="text-outline font-label-caps hover:text-on-surface transition-colors" href="#">API Docs</a>
         </div>
       </div>
     </footer>
