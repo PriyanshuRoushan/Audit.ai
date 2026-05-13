@@ -1,5 +1,55 @@
-I chose React + Vite with JavaScript because it allowed faster iteration within the 7-day timeline and matched the stack I’m most productive in. My priority was shipping a polished, fully working product with strong audit logic rather than introducing additional complexity from unfamiliar tooling.
+# ARCHITECTURE.md
 
-I avoided TypeScript intentionally to maximize development speed and reduce overhead during rapid prototyping. To compensate, I focused on clear component structure, reusable utility functions, runtime validation, and testing around the audit engine.
+# System Architecture
 
-For styling, I used custom CSS instead of Tailwind because the UI system was already designed and implemented before development started. This helped maintain visual consistency and allowed more control over custom layouts and gradients without introducing a utility-first abstraction layer midway through the project.
+Audit.ai is a full-stack SaaS MVP focused on AI spend analysis and optimization.
+
+## Architecture Overview
+
+```mermaid
+graph TD
+
+A[Landing Page] --> B[Authentication]
+B --> C[Audit Dashboard]
+C --> D[Tool Selection]
+D --> E[Usage Metrics Input]
+E --> F[Audit Engine]
+F --> G[Recommendation Engine]
+G --> H[Gemini AI Summary]
+H --> I[Database Storage]
+I --> J[Shareable Report URL]
+J --> K[Email Notifications]
+```
+
+## Frontend
+- React
+- Tailwind CSS
+- Context API
+- LocalStorage
+
+## Backend
+- Node.js
+- Express.js
+- Supabase PostgreSQL
+
+## AI Integration
+
+Gemini API is used for:
+- AI-generated summaries
+- Recommendation explanations
+- Audit analysis summaries
+
+Core business logic remains deterministic and rule-based.
+
+## Recommendation Logic
+
+### Implemented Rules
+- Team-size rules
+- Duplicate tool detection
+- Basic savings estimation
+
+## Security
+- JWT authentication
+- Environment variables
+- Input validation
+- Public report sanitization
