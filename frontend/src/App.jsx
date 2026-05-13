@@ -27,9 +27,12 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/audit" element={<Audit />} />
-            <Route path="/report/:slug" element={<Report />} />
-
             {/* Protected Routes */}
+            <Route path="/report/:slug" element={
+              <ProtectedRoute redirectTo="/login">
+                <Report />
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />

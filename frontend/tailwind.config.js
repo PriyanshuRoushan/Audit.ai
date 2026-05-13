@@ -71,14 +71,15 @@ export default {
         "base": "4px"
       },
       "fontFamily": {
-        "h3": ["Inter"],
-        "mono": ["ui-monospace"],
-        "h1": ["Inter"],
-        "body-lg": ["Inter"],
-        "body-sm": ["Inter"],
-        "label-caps": ["Inter"],
-        "display": ["Inter"],
-        "h2": ["Inter"]
+        "sans": ["Inter", "sans-serif"],
+        "h3": ["Outfit", "sans-serif"],
+        "mono": ["ui-monospace", "monospace"],
+        "h1": ["Outfit", "sans-serif"],
+        "body-lg": ["Inter", "sans-serif"],
+        "body-sm": ["Inter", "sans-serif"],
+        "label-caps": ["Inter", "sans-serif"],
+        "display": ["Outfit", "sans-serif"],
+        "h2": ["Outfit", "sans-serif"]
       },
       "fontSize": {
         "h3": ["18px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "600"}],

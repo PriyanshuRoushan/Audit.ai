@@ -61,7 +61,7 @@ export function Nav() {
           onClick={() => handleNavigate("audit")}
           className="bg-primary text-on-primary px-stack-md py-2 rounded-lg font-label-caps hover:opacity-90 active:scale-95 transition-all"
         >
-          Connect Stack
+          Run Audit
         </button>
         {user ? (
           <div className="flex items-center gap-4">
