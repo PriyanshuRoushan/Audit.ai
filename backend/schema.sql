@@ -51,7 +51,11 @@ CREATE TABLE IF NOT EXISTS reports (
   score INTEGER,
   risk_level VARCHAR(50), -- Low, Medium, High, Critical
   summary TEXT,
+  ai_usage_score INTEGER,
+  issues JSONB, -- Array of issues
   recommendations JSONB, -- Array of recommendations
+  seo_notes TEXT,
+  performance_notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

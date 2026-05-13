@@ -1,8 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export function Nav() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth() || {};
 
   // Determine active page from path
   const path = location.pathname;
@@ -16,6 +18,11 @@ export function Nav() {
     else if (key === "dashboard") navigate("/dashboard");
     else if (key === "audit") navigate("/audit");
     else if (key === "report") navigate("/report/demo");
+  };
+
+  const handleLogout = () => {
+    if (logout) logout();
+    navigate('/login');
   };
 
   return (
@@ -56,9 +63,27 @@ export function Nav() {
         >
           Connect Stack
         </button>
-        <div className="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-white/10">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-gBFYrEwUPYH_Q66K4W6bJlk5x8JuPt8_kKtSX0HxkLpjB081tC8PXJAd0YfRM_MtFjBcfOTQHLxDpAVcfv7cSjLpMO4seTg85V5IvFhNNX6sObsBeCJXNVy5sOScHcYisKA5TgRiCg8eaowxq6t6eTRjP068Yiwv0twbQ12mPlEZaqj7Y4_zkCZE8KWyVBv_iA1PA7xMwOY51-YBdrgPUQ5b_HOjpB_0W70sKbEXMdZAOIFJGuOiB-jjoGpmlOhx_mzKgTC6F1Au" alt="User profile" className="w-full h-full object-cover" />
-        </div>
+        {user ? (
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-white/10">
+              <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-gBFYrEwUPYH_Q66K4W6bJlk5x8JuPt8_kKtSX0HxkLpjB081tC8PXJAd0YfRM_MtFjBcfOTQHLxDpAVcfv7cSjLpMO4seTg85V5IvFhNNX6sObsBeCJXNVy5sOScHcYisKA5TgRiCg8eaowxq6t6eTRjP068Yiwv0twbQ12mPlEZaqj7Y4_zkCZE8KWyVBv_iA1PA7xMwOY51-YBdrgPUQ5b_HOjpB_0W70sKbEXMdZAOIFJGuOiB-jjoGpmlOhx_mzKgTC6F1Au" alt="User profile" className="w-full h-full object-cover" />
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="text-on-surface-variant hover:text-error text-body-sm transition-colors flex items-center gap-1"
+              title="Logout"
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => navigate('/login')}
+            className="text-on-surface-variant hover:text-primary text-body-sm transition-colors font-medium"
+          >
+            Login
+          </button>
+        )}
       </div>
     </nav>
   );

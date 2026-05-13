@@ -14,7 +14,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   // ✅ IMPORTANT: backend URL from env
-  const API = import.meta.env.VITE_API_URL;
+  const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

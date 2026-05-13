@@ -4,6 +4,8 @@ import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import { tools } from '../data/tools';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const TOOLS = [
   { id: "cursor", label: "Cursor", sub: "AI Code Editor", icon: "code", colorClass: "text-primary", fill: false },
   { id: "chatgpt", label: "ChatGPT", sub: "Plus / Team / Enterprise", icon: "chat_bubble", colorClass: "text-secondary", fill: false },

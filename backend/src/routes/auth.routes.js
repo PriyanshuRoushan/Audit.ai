@@ -12,12 +12,13 @@ const validate = (req, res, next) => {
   }
   next();
 };
+import { isValidGmail } from '../middleware/validation.middleware.js';
 
 router.post('/register', [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
-], validate, register);
+], validate, isValidGmail, register);
 
 router.post('/login', [
   body('email').isEmail().withMessage('Valid email is required'),

@@ -1,5 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { generateAuditReport } from '../services/ai.service.js';
+import { getAiUsageScore } from '../utils/aiUsageScore.js';
+import { sendAuditEmail } from '../utils/emailService.js';
 
 export const createAudit = async (req, res) => {
   try {
@@ -47,8 +49,16 @@ export const createAudit = async (req, res) => {
 
     if (responseError) throw responseError;
 
+    // 2.5 Generate AI Usage Score based on description / user input
+    const userInputPrompt = JSON.stringify(responseData);
+    const usageScoreResult = await getAiUsageScore(userInputPrompt);
+
     // 3. Generate AI Report
-    const aiReport = await generateAuditReport(responseData);
+    const aiReport = await generateAuditReport({
+      website: audit.website,
+      responseData,
+      aiUsageScore: usageScoreResult.score
+    });
 
     // 4. Save Report to database
     const { data: report, error: reportError } = await supabase
@@ -59,7 +69,11 @@ export const createAudit = async (req, res) => {
           score: aiReport.score,
           risk_level: aiReport.risk_level,
           summary: aiReport.summary,
-          recommendations: aiReport.recommendations
+          ai_usage_score: aiReport.ai_usage_score,
+          issues: aiReport.issues || [],
+          recommendations: aiReport.recommendations || [],
+          seo_notes: aiReport.seo_notes || '',
+          performance_notes: aiReport.performance_notes || ''
         }
       ])
       .select()
@@ -69,6 +83,15 @@ export const createAudit = async (req, res) => {
 
     // 5. Mark Audit as Completed
     await supabase.from('audits').update({ status: 'Completed' }).eq('id', audit.id);
+
+    // 6. Generate URLs and Send Email
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const reportUrl = `${baseUrl}/audit/${audit.id}`;
+    const pdfUrl = `${baseUrl}/audit/${audit.id}/pdf`;
+    
+    // We assume req.user.email exists, but fallback to a dummy or client_name if not available
+    const userEmail = req.user?.email || 'test@gmail.com'; 
+    await sendAuditEmail(userEmail, reportUrl, pdfUrl, aiReport.summary);
 
     res.status(201).json({ 
       message: 'Audit created and analyzed successfully', 
@@ -168,6 +191,41 @@ export const getAuditReport = async (req, res) => {
     if (error) throw error;
 
     res.json(report);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getPublicAudit = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: audit, error: auditError } = await supabase
+      .from('audits')
+      .select('*, users(name)')
+      .eq('id', id)
+      .single();
+
+    if (auditError) {
+      return res.status(404).json({ error: 'Audit not found' });
+    }
+
+    const { data: report } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('audit_id', id)
+      .single();
+
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('audit_id', id);
+
+    res.json({
+      audit: audit || {},
+      report: report || {},
+      attachments: attachments || []
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
