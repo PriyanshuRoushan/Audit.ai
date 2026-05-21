@@ -29,6 +29,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/audit" element={<Audit />} />
             {/* Protected Routes */}
+            <Route path="/share/:shareToken" element={<Report />} />
             <Route path="/report/:slug" element={
               <ProtectedRoute redirectTo="/login">
                 <Report />

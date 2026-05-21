@@ -4,10 +4,11 @@ import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 
 export default function ReportPage() {
-  const { slug } = useParams(); // Using slug as the audit ID for now
+  const { slug, shareToken } = useParams();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const routerNavigate = useNavigate();
   const navigate = (key) => {
@@ -17,34 +18,59 @@ export default function ReportPage() {
     else if (key === "landing") routerNavigate("/");
   };
 
-  useEffect(() => {
-  const fetchReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-      const res = await fetch(
-        `${API}/api/audits/${slug}/report`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to fetch report");
-
-      const data = await res.json();
-      setReport(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleCopyLink = () => {
+    const tokenVal = report?.audits?.share_token;
+    const shareUrl = tokenVal 
+      ? `${window.location.origin}/share/${tokenVal}`
+      : window.location.href;
+    
+    navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  fetchReport();
-}, [slug]);
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+        let url = '';
+        let headers = {};
+
+        if (shareToken) {
+          url = `${API}/api/audits/share/${shareToken}`;
+        } else {
+          url = `${API}/api/audits/${slug}/report`;
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+        }
+
+        const res = await fetch(url, { headers });
+
+        if (!res.ok) throw new Error("Failed to fetch report");
+
+        const data = await res.json();
+        
+        if (shareToken) {
+          const normalizedReport = {
+            ...data.report,
+            audits: data.audit
+          };
+          setReport(normalizedReport);
+        } else {
+          setReport(data);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReport();
+  }, [slug, shareToken]);
 
   const C = { primary: "#c0c1ff", secondary: "#4edea3", outline: "#908fa0", onSurface: "#e5e2e1", onSurfaceVariant: "#c7c4d7", onPrimary: "#1000a9" };
 
@@ -132,16 +158,45 @@ export default function ReportPage() {
             {/* Share */}
             <div style={{ gridColumn: "span 4", display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ background: "rgba(23,23,23,0.7)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: 24, flex: 1 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 600, color: C.onSurface, marginBottom: 16 }}>Share Impact</h3>
-                {[{ icon: "share", label: "Share on Twitter", tr: "arrow_forward" }, { icon: "work", label: "Post to LinkedIn", tr: "arrow_forward" }, { icon: "content_copy", label: "Copy Report Link", tr: "link" }].map((btn) => (
-                  <button key={btn.label} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", padding: 16, borderRadius: 8, cursor: "pointer", marginBottom: 8, color: C.onSurface }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 14, fontWeight: 500 }}>
-                      <span className="material-symbols-outlined" style={{ color: C.outline }}>{btn.icon}</span>
-                      {btn.label}
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: C.onSurface, marginBottom: 16 }}>Share Report</h3>
+                <p style={{ fontSize: 13, color: C.onSurfaceVariant, marginBottom: 16, lineHeight: 1.5 }}>
+                  Share this verified AI stack optimization report publicly using the secure link below:
+                </p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={report?.audits?.share_token ? `${window.location.origin}/share/${report.audits.share_token}` : 'Generating link...'} 
+                      style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '12px 16px', color: C.onSurfaceVariant, fontSize: 13, outline: 'none', paddingRight: 40 }}
+                    />
+                    <span 
+                      className="material-symbols-outlined" 
+                      style={{ position: 'absolute', right: 12, color: C.outline, fontSize: 18 }}
+                    >
+                      link
                     </span>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: C.outline }}>{btn.tr}</span>
+                  </div>
+
+                  <button 
+                    onClick={handleCopyLink} 
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: copied ? 'rgba(78,222,163,0.15)' : C.primary, color: copied ? '#4edea3' : C.onPrimary, border: copied ? '1px solid #4edea3' : 'none', padding: '12px 0', borderRadius: 8, fontWeight: 700, cursor: "pointer", transition: 'all 0.2s' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
+                      {copied ? 'check_circle' : 'content_copy'}
+                    </span>
+                    {copied ? 'Link Copied!' : 'Copy Share Link'}
                   </button>
-                ))}
+
+                  <button 
+                    onClick={() => window.open(report?.audits?.share_token ? `/share/${report.audits.share_token}` : window.location.href, '_blank')} 
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", padding: '12px 0', borderRadius: 8, fontWeight: 600, cursor: "pointer", color: C.onSurface, transition: 'all 0.2s' }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>open_in_new</span>
+                    Open Public Report
+                  </button>
+                </div>
               </div>
               <div style={{ background: "rgba(192,193,255,0.1)", border: "1px solid rgba(192,193,255,0.2)", borderRadius: 12, padding: 24 }}>
                 <p style={{ fontSize: 14, color: C.primary, marginBottom: 8, fontWeight: 500 }}>Want these results?</p>

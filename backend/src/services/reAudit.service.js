@@ -111,6 +111,19 @@ export const reRunAuditService = async (auditId) => {
     })
     .eq('id', auditId);
 
+  // Insert notification
+  try {
+    await supabase.from('notifications').insert([
+      {
+        user_id: audit.auditor_id,
+        message: `Audit "${audit.title}" has been successfully re-audited with latest pricing.`,
+        is_read: false
+      }
+    ]);
+  } catch (notifErr) {
+    console.error('[Re-Audit Service] Failed to create notification:', notifErr.message);
+  }
+
   // Update or insert report
   if (oldReport) {
     await supabase
