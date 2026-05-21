@@ -1,26 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
-import { tools } from '../data/tools';
+import { fetchPricing, FALLBACK_PRICING, formatPlanName } from '../services/pricingService';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const TOOLS = [
-  { id: "cursor", label: "Cursor", sub: "AI Code Editor", icon: "code", colorClass: "text-primary", fill: false },
-  { id: "chatgpt", label: "ChatGPT", sub: "Plus / Team / Enterprise", icon: "chat_bubble", colorClass: "text-secondary", fill: false },
-  { id: "claude", label: "Claude", sub: "Anthropic Web UI", icon: "temp_preferences_custom", colorClass: "text-tertiary", fill: false },
-  { id: "copilot", label: "GitHub Copilot", sub: "Business/Enterprise", icon: "terminal", colorClass: "text-on-surface", fill: false },
-  { id: "gemini", label: "Gemini", sub: "Google Workspace", icon: "diamond", colorClass: "text-primary-fixed-dim", fill: true },
-  { id: "openai", label: "OpenAI API", sub: "Token-based usage", icon: "api", colorClass: "text-on-tertiary-container", fill: false },
-  { id: "anthropic", label: "Anthropic API", sub: "Claude API keys", icon: "hub", colorClass: "text-on-secondary-fixed-variant", fill: false },
-  { id: "windsurf", label: "Windsurf", sub: "Next-gen Agentic IDE", icon: "surfing", colorClass: "text-secondary", fill: false },
-];
+const TOOL_METADATA = {
+  cursor: { label: "Cursor", sub: "AI Code Editor", icon: "code", colorClass: "text-primary", fill: false },
+  chatgpt: { label: "ChatGPT", sub: "Plus / Team / Enterprise", icon: "chat_bubble", colorClass: "text-secondary", fill: false },
+  claude: { label: "Claude", sub: "Anthropic Web UI", icon: "temp_preferences_custom", colorClass: "text-tertiary", fill: false },
+  github_copilot: { label: "GitHub Copilot", sub: "Business/Enterprise", icon: "terminal", colorClass: "text-on-surface", fill: false },
+  gemini: { label: "Gemini", sub: "Google Workspace", icon: "diamond", colorClass: "text-primary-fixed-dim", fill: true },
+  openai_api: { label: "OpenAI API", sub: "Token-based usage", icon: "api", colorClass: "text-on-tertiary-container", fill: false },
+  anthropic_api: { label: "Anthropic API", sub: "Claude API keys", icon: "hub", colorClass: "text-on-secondary-fixed-variant", fill: false },
+  windsurf: { label: "Windsurf", sub: "Next-gen Agentic IDE", icon: "surfing", colorClass: "text-secondary", fill: false },
+};
 
-const PLAN_OPTIONS = tools.reduce((acc, tool) => {
-  acc[tool.id] = tool.plans;
-  return acc;
-}, {});
+function getDynamicTools(pricingData) {
+  return Object.keys(pricingData).map((key) => {
+    const meta = TOOL_METADATA[key] || {
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      sub: "AI Tool",
+      icon: "extension",
+      colorClass: "text-primary",
+      fill: false
+    };
+
+    const planPrices = pricingData[key];
+    const planKeys = Object.keys(planPrices);
+    const plansList = planKeys.map(formatPlanName).join(', ');
+
+    // Find starting price
+    const prices = Object.values(planPrices);
+    const minPrice = Math.min(...prices);
+    const startingPrice = key.includes('api') ? `$${minPrice}/1M` : `$${minPrice}/mo`;
+
+    return {
+      id: key,
+      ...meta,
+      plansList,
+      startingPrice,
+      plans: planKeys.map(formatPlanName)
+    };
+  });
+}
+
+function getPlanOptions(pricingData) {
+  const options = {};
+  Object.keys(pricingData).forEach((key) => {
+    options[key] = Object.keys(pricingData[key]).map(formatPlanName);
+  });
+  return options;
+}
 
 export default function AuditPage() {
   const routerNavigate = useNavigate();
@@ -31,10 +63,30 @@ export default function AuditPage() {
     else if (key === "landing") routerNavigate("/");
   };
 
+  const [pricingData, setPricingData] = useState(FALLBACK_PRICING);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        const data = await fetchPricing();
+        setPricingData(data);
+      } catch (err) {
+        console.error("Failed to fetch pricing, using fallback:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPricing();
+  }, []);
+
+  const TOOLS = getDynamicTools(pricingData);
+  const PLAN_OPTIONS = getPlanOptions(pricingData);
+
   const [selected, setSelected] = useState(new Set(["cursor", "chatgpt"]));
   const [metrics, setMetrics] = useState({
     cursor: { plan: "Business", spend: "400", seats: "20" },
-    chatgpt: { plan: "Enterprise", spend: "1200", seats: "40" }
+    chatgpt: { plan: "Team", spend: "1200", seats: "40" }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -49,7 +101,8 @@ export default function AuditPage() {
         setMetrics(newMetrics);
       } else {
         n.add(id);
-        setMetrics({ ...metrics, [id]: { plan: PLAN_OPTIONS[id]?.[0] || "", spend: "", seats: "" } });
+        const options = PLAN_OPTIONS[id] || ["Default"];
+        setMetrics({ ...metrics, [id]: { plan: options[0] || "", spend: "", seats: "" } });
       }
       return n; 
     });
@@ -150,35 +203,60 @@ export default function AuditPage() {
               <span className="text-outline font-label-caps">Step 1 of 3</span>
             </div>
             {/* Tools Bento Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-stack-md">
-              {TOOLS.map((tool) => {
-                const isSel = selected.has(tool.id);
-                return (
-                  <div 
-                    key={tool.id} 
-                    onClick={() => toggle(tool.id)}
-                    className={`${isSel ? 'ai-gradient-border' : ''} glass-card p-stack-md rounded-xl cursor-pointer group hover:bg-white/5 transition-all`}
-                  >
-                    <div className="flex justify-between items-start mb-stack-md">
-                      <div className="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center border border-white/5">
-                        <span className={`material-symbols-outlined ${tool.colorClass}`} style={tool.fill ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                          {tool.icon}
-                        </span>
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-stack-md">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="glass-card p-stack-md rounded-xl animate-pulse space-y-4">
+                    <div className="w-12 h-12 bg-surface-container-high rounded-lg"></div>
+                    <div className="h-4 bg-surface-container-high rounded w-3/4"></div>
+                    <div className="h-3 bg-surface-container-high rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-stack-md">
+                {TOOLS.map((tool) => {
+                  const isSel = selected.has(tool.id);
+                  return (
+                    <div 
+                      key={tool.id} 
+                      onClick={() => toggle(tool.id)}
+                      className={`${isSel ? 'ai-gradient-border' : ''} glass-card p-stack-md rounded-xl cursor-pointer group hover:bg-white/5 transition-all flex flex-col justify-between`}
+                    >
+                      <div>
+                        <div className="flex justify-between items-start mb-stack-md">
+                          <div className="w-12 h-12 bg-surface-container-high rounded-lg flex items-center justify-center border border-white/5">
+                            <span className={`material-symbols-outlined ${tool.colorClass}`} style={tool.fill ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                              {tool.icon}
+                            </span>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                            isSel 
+                              ? 'border-2 border-primary-fixed-dim bg-primary' 
+                              : 'border border-outline/30 group-hover:border-primary/50'
+                          }`}>
+                            {isSel && <span className="material-symbols-outlined text-[14px] text-on-primary font-bold">check</span>}
+                          </div>
+                        </div>
+                        <p className="font-h3 text-h3 mb-1">{tool.label}</p>
+                        <p className="text-outline text-body-sm mb-3">{tool.sub}</p>
                       </div>
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                        isSel 
-                          ? 'border-2 border-primary-fixed-dim bg-primary' 
-                          : 'border border-outline/30 group-hover:border-primary/50'
-                      }`}>
-                        {isSel && <span className="material-symbols-outlined text-[14px] text-on-primary font-bold">check</span>}
+
+                      <div className="mt-2 pt-2 border-t border-white/5 space-y-1 text-[11px] text-on-surface-variant">
+                        <div className="flex justify-between gap-2">
+                          <span className="text-outline">Plans:</span>
+                          <span className="font-medium text-on-surface truncate max-w-[120px]" title={tool.plansList}>{tool.plansList}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span className="text-outline">Starting at:</span>
+                          <span className="font-medium text-primary-fixed-dim">{tool.startingPrice}</span>
+                        </div>
                       </div>
                     </div>
-                    <p className="font-h3 text-h3 mb-1">{tool.label}</p>
-                    <p className="text-outline text-body-sm">{tool.sub}</p>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Usage Metrics Section */}
@@ -198,11 +276,11 @@ export default function AuditPage() {
                     <div key={toolId} className="glass-card p-stack-md rounded-xl border border-white/10 space-y-stack-md">
                       <div className="flex items-center gap-stack-sm border-b border-white/5 pb-stack-sm">
                         <div className="w-8 h-8 bg-surface-container-high rounded flex items-center justify-center">
-                          <span className={`material-symbols-outlined text-[18px] ${tool.colorClass}`} style={tool.fill ? { fontVariationSettings: "'FILL' 1" } : {}}>
-                            {tool.icon}
+                          <span className={`material-symbols-outlined text-[18px] ${tool?.colorClass || ''}`} style={tool?.fill ? { fontVariationSettings: "'FILL' 1" } : {}}>
+                            {tool?.icon || 'extension'}
                           </span>
                         </div>
-                        <span className="font-h3 text-h3">{tool.label}</span>
+                        <span className="font-h3 text-h3">{tool?.label || toolId}</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-stack-sm">
                         <div className="space-y-1">

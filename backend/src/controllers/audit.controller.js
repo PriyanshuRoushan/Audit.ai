@@ -184,7 +184,7 @@ export const getAuditReport = async (req, res) => {
 
     const { data: report, error } = await supabase
       .from('reports')
-      .select('*, audits(title, client_name)')
+      .select('*, audits(id, title, client_name, invalidated, last_checked_at)')
       .eq('audit_id', id)
       .single();
 
