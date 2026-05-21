@@ -58,7 +58,20 @@ export const runPricingCheck = async () => {
           `• ${c.tool.replace('_', ' ').toUpperCase()} (${c.plan}): $${c.oldPrice !== null ? c.oldPrice : 'N/A'} → $${c.newPrice !== null ? c.newPrice : 'Removed'}`
         ).join('\n');
 
-        await sendPricingChangeEmail(email, audit, changesSummary);
+        await sendPricingChangeEmail({ email, audit, changesSummary });
+
+        // Insert notification
+        try {
+          await supabase.from('notifications').insert([
+            {
+              user_id: audit.auditor_id,
+              message: `Pricing changes detected. Audit "${audit.title}" has been marked for revalidation.`,
+              is_read: false
+            }
+          ]);
+        } catch (notifErr) {
+          console.error('[Pricing Monitor] Failed to persist notification:', notifErr.message);
+        }
 
         affectedAudits.push({
           auditId: audit.id,

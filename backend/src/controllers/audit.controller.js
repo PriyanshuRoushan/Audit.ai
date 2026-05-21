@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase.js';
 import { generateAuditReport } from '../services/ai.service.js';
 import { getAiUsageScore } from '../utils/aiUsageScore.js';
 import { sendAuditEmail } from '../utils/emailService.js';
+import crypto from 'crypto';
 
 export const createAudit = async (req, res) => {
   try {
@@ -11,24 +12,54 @@ export const createAudit = async (req, res) => {
     const auditTitle = title || `AI Stack Audit for ${req.user.name || 'Client'}`;
     const auditClientName = client_name || req.user.name || 'Acme Corp';
     
-    // 1. Create the Audit record
-    const { data: audit, error: auditError } = await supabase
+    // Generate secure share token and report URL
+    const shareToken = crypto.randomUUID();
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const reportUrl = `${baseUrl}/share/${shareToken}`;
+
+    // 1. Create the Audit record with schema fallback support
+    let audit = null;
+    let auditError = null;
+
+    const auditDataToInsert = {
+      title: auditTitle,
+      description: description || 'Automated AI infrastructure configuration audit.',
+      client_name: auditClientName,
+      website: website || 'unknown',
+      type: type || 'AI Infrastructure',
+      priority: priority || 'High',
+      status: 'In Progress',
+      due_date,
+      auditor_id: req.user.id,
+      share_token: shareToken,
+      report_url: reportUrl
+    };
+
+    const insertResult = await supabase
       .from('audits')
-      .insert([
-        {
-          title: auditTitle,
-          description: description || 'Automated AI infrastructure configuration audit.',
-          client_name: auditClientName,
-          website: website || 'unknown',
-          type: type || 'AI Infrastructure',
-          priority: priority || 'High',
-          status: 'In Progress',
-          due_date,
-          auditor_id: req.user.id
-        }
-      ])
+      .insert([auditDataToInsert])
       .select()
       .single();
+
+    audit = insertResult.data;
+    auditError = insertResult.error;
+
+    if (auditError) {
+      if (auditError.message?.includes('column') || auditError.message?.includes('schema cache')) {
+        console.warn('⚠️ share_token or report_url columns missing in Supabase. Falling back to legacy schema insertion...');
+        delete auditDataToInsert.share_token;
+        delete auditDataToInsert.report_url;
+
+        const fallbackResult = await supabase
+          .from('audits')
+          .insert([auditDataToInsert])
+          .select()
+          .single();
+
+        audit = fallbackResult.data;
+        auditError = fallbackResult.error;
+      }
+    }
 
     if (auditError) throw auditError;
 
@@ -84,17 +115,44 @@ export const createAudit = async (req, res) => {
     // 5. Mark Audit as Completed
     await supabase.from('audits').update({ status: 'Completed' }).eq('id', audit.id);
 
-    // 6. Generate URLs and Send Email
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const reportUrl = `${baseUrl}/audit/${audit.id}`;
-    const pdfUrl = `${baseUrl}/audit/${audit.id}/pdf`;
-    
-    // We assume req.user.email exists, but fallback to a dummy or client_name if not available
-    const userEmail = req.user?.email || 'test@gmail.com'; 
-    await sendAuditEmail(userEmail, reportUrl, pdfUrl, aiReport.summary);
+    // 6. Generate savings and trigger email delivery
+    const totalSpend = Object.values(metrics || {}).reduce((sum, m) => sum + parseFloat(m.spend || 0), 0);
+    const estimatedSavings = Math.round(totalSpend * 0.25); // estimate 25% savings
+    const userEmail = req.user?.email || 'priyanshuroushan002@gmail.com'; 
+    const pdfUrl = `${baseUrl}/report/${audit.id}/pdf`;
+
+    const finalShareToken = audit.share_token || null;
+    const finalReportUrl = audit.report_url || `${baseUrl}/report/${audit.id}`;
+
+    await sendAuditEmail({
+      email: userEmail,
+      auditId: audit.id,
+      pdfUrl,
+      summary: aiReport.summary,
+      savings: estimatedSavings,
+      score: aiReport.score,
+      shareToken: finalShareToken
+    });
+
+    // 7. Insert Notification into notifications table
+    try {
+      await supabase.from('notifications').insert([
+        {
+          user_id: req.user.id,
+          message: `Your AI audit report for ${auditTitle} is ready.`,
+          is_read: false
+        }
+      ]);
+    } catch (notifErr) {
+      console.error('Failed to create in-app notification:', notifErr.message);
+    }
 
     res.status(201).json({ 
+      success: true,
       message: 'Audit created and analyzed successfully', 
+      auditId: audit.id,
+      reportUrl: finalReportUrl,
+      shareToken: finalShareToken,
       audit,
       report 
     });
@@ -179,22 +237,81 @@ export const deleteAudit = async (req, res) => {
 };
 
 export const getAuditReport = async (req, res) => {
-  try {
-    const { id } = req.params;
 
-    const { data: report, error } = await supabase
-      .from('reports')
-      .select('*, audits(id, title, client_name, invalidated, last_checked_at)')
-      .eq('audit_id', id)
-      .single();
+try {
 
-    if (error) throw error;
+```
+const { id } = req.params;
 
-    res.json(report);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// 1. Fetch report only
+const {
+  data: report,
+  error: reportError
+} = await supabase
+  .from('reports')
+  .select('*')
+  .eq('audit_id', id)
+  .single();
+
+if (reportError) {
+  console.error(
+    'REPORT FETCH ERROR:',
+    reportError
+  );
+
+  throw reportError;
+}
+
+// 2. Fetch audit separately
+const {
+  data: audit,
+  error: auditError
+} = await supabase
+  .from('audits')
+  .select(`
+    id,
+    title,
+    client_name,
+    invalidated,
+    report_url,
+    share_token
+  `)
+  .eq('id', id)
+  .single();
+
+if (auditError) {
+
+  console.error(
+    'AUDIT FETCH ERROR:',
+    auditError
+  );
+
+  throw auditError;
+}
+
+// 3. Return merged response
+res.json({
+  ...report,
+  audit
+});
+```
+
+} catch (error) {
+
+```
+console.error(
+  'GET REPORT ERROR:',
+  error
+);
+
+res.status(500).json({
+  error: error.message
+});
+```
+
+}
 };
+
 
 export const getPublicAudit = async (req, res) => {
   try {
@@ -230,3 +347,40 @@ export const getPublicAudit = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getPublicAuditByShareToken = async (req, res) => {
+  try {
+    const { shareToken } = req.params;
+
+    const { data: audit, error: auditError } = await supabase
+      .from('audits')
+      .select('*, users(name)')
+      .eq('share_token', shareToken)
+      .single();
+
+    if (auditError || !audit) {
+    
+      return res.status(404).json({ error: 'Audit not found or invalid share token' });
+    }
+
+    const { data: report } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('audit_id', audit.id)
+      .single();
+
+    const { data: attachments } = await supabase
+      .from('attachments')
+      .select('*')
+      .eq('audit_id', audit.id);
+
+    res.json({
+      audit: audit || {},
+      report: report || {},
+      attachments: attachments || []
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
