@@ -11,6 +11,7 @@ import Report from "./pages/Report";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import ReAudit from "./pages/ReAudit";
 
 function App() {
   return (
@@ -36,6 +37,11 @@ function App() {
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/re-audit/:auditId" element={
+              <ProtectedRoute>
+                <ReAudit />
               </ProtectedRoute>
             } />
 

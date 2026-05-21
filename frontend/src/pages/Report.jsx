@@ -77,6 +77,24 @@ export default function ReportPage() {
       <Nav />
       <main style={{ paddingTop: 128, paddingBottom: 48, background: "#131313" }}>
         <div style={{ maxWidth: 1152, margin: "0 auto", padding: "0 24px" }}>
+          {report.audits?.invalidated && (
+            <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', padding: '16px 24px', borderRadius: 12, marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span className="material-symbols-outlined" style={{ color: '#fbbf24', animation: 'pulse 1.5s infinite', fontSize: 28 }}>warning</span>
+                <div>
+                  <strong style={{ color: '#fbbf24', fontSize: 16 }}>Pricing Update Detected</strong>
+                  <p style={{ color: C.onSurfaceVariant, fontSize: 13, marginTop: 4 }}>
+                    Pricing for tools in this audit has changed. The current report may be outdated.
+                    {report.audits?.last_checked_at && ` (Last checked: ${new Date(report.audits.last_checked_at).toLocaleDateString()})`}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => routerNavigate(`/re-audit/${report.audits.id}`)} style={{ background: C.primary, color: C.onPrimary, border: 'none', padding: '8px 20px', borderRadius: 6, fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+                Re-Run Audit
+              </button>
+            </div>
+          )}
+          <style>{`@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }`}</style>
           <header style={{ textAlign: "center", maxWidth: 640, margin: "0 auto 48px" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(78,222,163,0.1)", color: C.secondary, padding: "4px 16px", borderRadius: 999, marginBottom: 16, border: "1px solid rgba(78,222,163,0.2)" }}>
               <span className="material-symbols-outlined" style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}>verified</span>
